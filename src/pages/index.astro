@@ -1,8 +1,14 @@
 ---
-import { listMessages } from "../lib/db";
+import { ROOMS, clashingIds, listBookings } from "../lib/db";
 import "../styles.css";
 
-const messages = listMessages();
+const bookings = listBookings();
+const clashing = clashingIds(bookings);
+const failed = Astro.url.searchParams.has("error");
+
+const today = new Date().toISOString().slice(0, 10);
+const HOURS = Array.from({ length: 13 }, (_, i) => i + 8); // 08:00–20:00
+const hour = (h: number) => `${String(h).padStart(2, "0")}:00`;
 ---
 
 <!doctype html>
@@ -10,43 +16,85 @@ const messages = listMessages();
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>COMP4020 prototype</title>
+    <title>Room bookings that admit when they clash</title>
   </head>
   <body>
     <nav aria-label="site">
-      <a href="/">Guestbook</a>
+      <a href="/">Bookings</a>
       <a href="/readme/">About</a>
     </nav>
     <main>
-      <h1>Guestbook</h1>
+      <h1>Room bookings that admit when they clash</h1>
       <p>
-        A minimal full-stack starter: messages live in SQLite on the machine's
-        volume (state survives a reload and a redeploy), and new messages
-        appear in every open tab over a server-sent-events stream — open this
-        page twice and sign it in one. Replace all of this with your own
-        prototype.
+        Book a teaching room, and see every other booking for it at the same
+        time. The system this replaces takes the booking, says nothing, and
+        lets you find out when you walk in and someone else is already
+        teaching. This one stores the clash and shows it to both of you.
       </p>
-      <form method="post" action="/api/messages">
-        <label for="body">Leave a message</label>
-        <input id="body" name="body" required maxlength="500" />
-        <button>Sign</button>
+
+      {failed && <p role="alert">That booking was missing something — every field except the purpose is required, and the finish time has to be after the start.</p>}
+
+      <h2>Book a room</h2>
+      <form method="post" action="/api/bookings">
+        <p>
+          <label for="room">Room</label>
+          <select id="room" name="room" required>
+            {ROOMS.map((room) => <option value={room}>{room}</option>)}
+          </select>
+        </p>
+        <p>
+          <label for="bookedBy">Your name</label>
+          <input id="bookedBy" name="bookedBy" required maxlength="120" />
+        </p>
+        <p>
+          <label for="day">Day</label>
+          <input id="day" name="day" type="date" required value={today} />
+        </p>
+        <p>
+          <label for="startHour">From</label>
+          <select id="startHour" name="startHour" required>
+            {HOURS.map((h) => <option value={h} selected={h === 9}>{hour(h)}</option>)}
+          </select>
+        </p>
+        <p>
+          <label for="endHour">Until</label>
+          <select id="endHour" name="endHour" required>
+            {HOURS.map((h) => <option value={h + 1} selected={h === 9}>{hour(h + 1)}</option>)}
+          </select>
+        </p>
+        <p>
+          <label for="purpose">Purpose (optional)</label>
+          <input id="purpose" name="purpose" maxlength="200" />
+        </p>
+        <button>Request the room</button>
       </form>
-      <ul id="messages">
-        {messages.map((message) => <li>{message.body}</li>)}
-      </ul>
+
+      <h2>Everything booked</h2>
+      {bookings.length === 0 ? (
+        <p id="empty">Nothing is booked yet. The first booking can't clash with anything.</p>
+      ) : (
+        <ul id="bookings">
+          {bookings.map((b) => (
+            <li>
+              <strong>{b.room}</strong>{" "}
+              <time datetime={b.day}>{b.day}</time>{" "}
+              {hour(b.startHour)}–{hour(b.endHour)} — {b.bookedBy}
+              {b.purpose ? ` (${b.purpose})` : ""}
+              {clashing.has(b.id) && <span class="clash"> ⚠ clashes with another booking</span>}
+            </li>
+          ))}
+        </ul>
+      )}
     </main>
     <script>
-      // The live half of the demo: subscribe to the SSE stream and prepend
-      // messages as they arrive. The form itself needs none of this — its
-      // POST + redirect re-renders the submitting tab from SQLite; this
-      // stream is how every other tab finds out.
-      const list = document.querySelector("#messages");
+      // Live half: other tabs find out about a new booking over the SSE
+      // stream. The form itself needs none of this — its POST + redirect
+      // re-renders the submitting tab from SQLite. A booking arriving here
+      // reloads rather than appending, because whether it *clashes* is a
+      // question about the whole list, and the server already answers it.
       const source = new EventSource("/api/events");
-      source.addEventListener("message", (event) => {
-        const message = JSON.parse(event.data);
-        const item = document.createElement("li");
-        item.textContent = message.body;
-        list?.prepend(item);
+      source.addEventListener("message", () => {
+        location.reload();
       });
     </script>
   </body>

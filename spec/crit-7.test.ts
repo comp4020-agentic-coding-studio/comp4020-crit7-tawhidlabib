@@ -31,9 +31,17 @@ import { ROUTES } from "./routes";
 // app arrives, and that red-to-green is the record of the week's work.
 const CREATE = {
   /** The endpoint your create form POSTs to. */
-  path: "/api/REPLACE-ME",
+  path: "/api/bookings",
   /** The form field carrying the new thing's identifying text. */
-  field: "REPLACE-ME",
+  field: "bookedBy",
+  /** The rest of a valid submission. Fixed on purpose: every probe books the
+   *  same room at the same hour, so the clash path is exercised too. */
+  extra: {
+    room: "Marie Reay 4.03",
+    day: "2026-10-07",
+    startHour: "9",
+    endHour: "10",
+  } as Record<string, string>,
   /** Where a successful create sends the browser. */
   redirectsTo: "/",
   /** A page that lists the things you've created. */
@@ -56,6 +64,10 @@ const post = (url: string, path: string, body: URLSearchParams) =>
 
 const probe = (label: string) => `${label} ${process.hrtime.bigint()}`;
 
+/** A complete, valid submission whose identifying field is `thing`. */
+const submission = (thing: string) =>
+  new URLSearchParams({ ...CREATE.extra, [CREATE.field]: thing });
+
 describe("the week's contract", () => {
   it("has a create flow to test (fill in CREATE above)", () => {
     expect(
@@ -65,7 +77,7 @@ describe("the week's contract", () => {
   });
 
   it.skipIf(placeholders)("accepts a create and redirects back", async () => {
-    const res = await post(baseUrl, CREATE.path, new URLSearchParams({ [CREATE.field]: probe("create") }));
+    const res = await post(baseUrl, CREATE.path, submission(probe("create")));
 
     // A POST that answers 200 with a page is usually a form that re-renders
     // its own result and breaks the back button; 303 is the flow we want.
@@ -75,7 +87,7 @@ describe("the week's contract", () => {
 
   it.skipIf(placeholders)("shows what you created on a fresh load", async () => {
     const thing = probe("visible");
-    await post(baseUrl, CREATE.path, new URLSearchParams({ [CREATE.field]: thing }));
+    await post(baseUrl, CREATE.path, submission(thing));
 
     const res = await fetch(new URL(CREATE.showsUpAt, baseUrl));
     expect(res.ok).toBe(true);
@@ -95,7 +107,7 @@ describe("the week's contract", () => {
 
     const first = await boot(dbPath);
     try {
-      const res = await post(first.url, CREATE.path, new URLSearchParams({ [CREATE.field]: thing }));
+      const res = await post(first.url, CREATE.path, submission(thing));
       expect(res.status).toBe(303);
     } finally {
       await first.stop();
