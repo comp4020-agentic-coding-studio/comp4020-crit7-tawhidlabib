@@ -1,54 +1,60 @@
 # Process overview
 
-<!-- TEMPLATE: this file is a shape to fill in, not a form. Replace everything
-     in it with your own overview, and delete this comment — `pnpm
-     check:evidence` will remind you if it's still here. -->
-
-Written by you, for a reader: how you got from the brief to the harness and
-agentic workflow behind this submission. Markers read this file and follow its
-citations; they don't trawl the repo for evidence you didn't point at.
-
-This file is the shape; the course site's
-[assessment page](https://comp.anu.edu.au/courses/comp4020-agentic-coding-studio/topics/assessment/#what-you-submit)
-is the requirement, and its
-[word counts](https://comp.anu.edu.au/courses/comp4020-agentic-coding-studio/topics/assessment/#word-counts)
-cover every deliverable.
-
 ## What I built
 
-A sentence or two. `README.md` is where the account of what the app is and what
-good means here lives; this file is how you got there.
+A room-booking prototype that stores double bookings instead of rejecting them,
+and marks both sides of every clash. `README.md` argues why that is the right
+call; this file is how the repo got here.
 
 ## How I got here
 
-The account of the process: how the work actually went, and how you knew the
-result was right. Tell it in whatever order makes it clear. A weekly prototype
-needs a paragraph or two; an assignment needs more.
+The honest version: the setup was done a week early and the app was built in
+forty-five minutes on the morning of the cutoff. The commit timestamps say so,
+and the shape of this repo is a direct result.
 
-Cite the record as you go, as links whose text is the commit hash or range and
-whose target is this repo's commit or compare URL, so a reader clicks straight
-to the evidence:
+Setup came first, deliberately in two commits before any prototype code. The
+harness came forward from Assignment 2 as its own commit,
+[`fb9ee17`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit7-tawhidlabib/commit/fb9ee17),
+so that the first thing in this repo's history answers "where did this
+`CLAUDE.md` come from". That merge was a sort, not a copy: the working rules and
+the lockfile rule survived; everything true only of a static site under a
+GitHub Pages base path was dropped, because this repo is `output: "server"` on
+Fly and has no base path at all. Two rules were generalised rather than
+discarded — the Assignment 2 lesson about fabricated DOIs became a rule about
+invented **room numbers and course codes**, which turned out to matter (see
+below), and a lesson about judging rendered artwork became a rule about driving
+running state rather than reading handlers.
 
-- one commit: [`a1b2c3d`](https://github.com/YOUR-ORG/YOUR-REPO/commit/a1b2c3d)
-- a range:
-  [`a1b2c3d...e4f5a6b`](https://github.com/YOUR-ORG/YOUR-REPO/compare/a1b2c3d...e4f5a6b)
+Then the spec tests, before the app existed, in
+[`ada606f`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit7-tawhidlabib/commit/ada606f).
+They started red on purpose and stayed red for a week. The one worth pointing at
+asserts persistence by booting a server, writing, killing it, and booting a cold
+one on the same SQLite file:
 
-To pair a prompt with the commit it produced, quote the prompt (curated, not a
-full transcript) next to the citation:
+> a plain second GET would pass against an in-memory array, which is the
+> failure this spec line exists to catch
 
-> the prompt, verbatim
+That test is the reason I trust the deployed app survives a Fly machine restart,
+which is not something the guestbook's own test ever checked.
 
-Screenshots are welcome where one carries the point better than a sentence does.
-Commit the file to this repo and link it with a **relative** path, which is what
-makes it render on GitHub: `![alt text](docs/before.png)`. Images don't count
-towards the word count and don't replace the citation.
+The build itself,
+[`f53978b`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit7-tawhidlabib/commit/f53978b),
+reshaped the starter's plumbing rather than replacing it — the decision the time
+made for me, and the one I would defend anyway. The single real design choice
+was refusing the obvious one: not rejecting a clash on submit. Rejecting tells
+the second person "no" and the first person nothing. The schema carries that
+decision as the *absence* of a unique constraint on `(room, day, hours)`, with a
+comment saying why, so the next person to read it doesn't 'fix' it.
 
-## Before you ship
+Two corrections came from checks rather than from me. `pnpm db:generate` stalled
+on an interactive prompt asking whether `bookings` was a renamed `messages`;
+since nothing had been deployed, regenerating a single clean migration was the
+right answer rather than inventing a rename. And driving the running app turned
+up the boundary case the code alone looked fine on: with end-hour exclusive, a
+09:00–10:00 and a 10:00–11:00 booking must *not* clash, or every back-to-back
+class flags and the feature is noise. That boundary is now pinned by a test.
 
-`pnpm check:evidence` verifies that this comment is gone, that your citations
-resolve to real commits, that a crit week's reflection entry is in
-`reflections/`, and that your `CLAUDE.md` is there. It checks that your account
-is traceable, not that it is good: that is the marker's call.
-
-Images aren't checked: unlike a citation whose SHA doesn't resolve, a broken
-image is visible the moment this file is rendered on GitHub.
+Where I ran out of road: the room list is hard-coded, and only Marie Reay 4.03
+is verified real. `README.md` says which three are plausible fiction rather than
+leaving a reader to assume they're all genuine — my own `CLAUDE.md` rule about
+confidently-invented identifiers, applied to my own output.
