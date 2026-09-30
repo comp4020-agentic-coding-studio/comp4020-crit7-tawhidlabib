@@ -46,6 +46,20 @@ the second person "no" and the first person nothing. The schema carries that
 decision as the *absence* of a unique constraint on `(room, day, hours)`, with a
 comment saying why, so the next person to read it doesn't 'fix' it.
 
+The last commit before the cutoff,
+[`aeeee38`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit7-tawhidlabib/commit/aeeee38),
+is the one I'd point at in the crit, because it is where I stopped believing my
+own README. The page up to then was a list with a warning badge on each
+colliding row — it *said* two bookings collide and showed nothing, which is the
+same failure I'd written three paragraphs accusing the real system of. Replacing
+it with a timetable made the argument structural: a booking that overlaps
+another cannot share a row with it, so it lands on a lane beneath it, and the
+depth of the stack is the severity. The lane packer went into its own module
+precisely because it is the kind of code that fails silently — the page renders,
+every booking is present, and a clash is merely in the wrong row — so
+`spec/schedule.test.ts` asserts it directly rather than through the page,
+including the same end-exclusive boundary the API test pins.
+
 Two corrections came from checks rather than from me. `pnpm db:generate` stalled
 on an interactive prompt asking whether `bookings` was a renamed `messages`;
 since nothing had been deployed, regenerating a single clean migration was the

@@ -19,9 +19,21 @@ information ends up with neither. Storing it and showing it puts the conflict in
 front of both, which is the thing the real system fails to do. If this grew, the
 next step would be notifying the earlier booker, not adding the constraint.
 
+**A clash is shown as a clash, not labelled as one.** The first version of this
+page was a list with a warning badge on each colliding row, and it argued the
+point in words while showing nothing. The page is now a timetable: bookings sit
+in the hour columns they occupy, and one that overlaps cannot share a row with
+what it overlaps, so it is pushed onto a lane directly beneath it. The stacking
+*is* the indicator — the depth of the pile is how bad the conflict is, readable
+before any text. The fill, the diagonal stripe and the words "⚠ clashes" are
+reinforcement, not the message, because the accessibility floor here runs in
+jsdom and cannot see colour at all.
+
 **End hour is exclusive.** A 09:00–10:00 and a 10:00–11:00 booking do not
 clash. This is the off-by-one that would make the feature useless by flagging
-every back-to-back class, so `spec/crit-7.test.ts` pins the boundary.
+every back-to-back class, so `spec/crit-7.test.ts` pins the boundary — and
+`spec/schedule.test.ts` pins the same boundary in the lane packing, which is
+the half that can be wrong while the page still renders perfectly.
 
 **Persistence means surviving the process, not the page.** The spec asks that
 the core flow persist across a reload. A second `GET` would prove that against
@@ -46,11 +58,12 @@ one question answered.
 ### Enforced, versus judgement
 
 `spec/crit-7.test.ts` holds the create flow, the redirect, visibility on reload,
-survival across a server restart, and route coverage. `spec/invariants.test.ts`
-holds the accessibility floor — and that floor runs in jsdom, so contrast and
-overlap are *not* checked. Whether the clash warning is actually noticeable, and
-whether "book a room" is the slice most worth fixing, are judgement calls no
-test here reaches.
+survival across a server restart, and route coverage. `spec/schedule.test.ts`
+holds the lane packing. `spec/invariants.test.ts` holds the accessibility floor
+— and that floor runs in jsdom, so contrast and overlap are *not* checked.
+Whether the stacked clash actually reads as a clash on a real screen, whether
+the timetable survives a phone, and whether "book a room" is the slice most
+worth fixing, are judgement calls no test here reaches.
 
 ## Running it
 
