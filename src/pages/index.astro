@@ -1,14 +1,23 @@
 ---
 import { ROOMS, clashingIds, listBookings } from "../lib/db";
+import { FIRST_HOUR, HOUR_SLOTS, hourLabel, schedule, span } from "../lib/schedule";
 import "../styles.css";
 
 const bookings = listBookings();
 const clashing = clashingIds(bookings);
+const days = schedule(bookings);
 const failed = Astro.url.searchParams.has("error");
 
 const today = new Date().toISOString().slice(0, 10);
-const HOURS = Array.from({ length: 13 }, (_, i) => i + 8); // 08:00–20:00
-const hour = (h: number) => `${String(h).padStart(2, "0")}:00`;
+const STARTS = Array.from({ length: HOUR_SLOTS }, (_, i) => i + FIRST_HOUR);
+const ENDS = STARTS.map((h) => h + 1);
+
+const dayLabel = (day: string) =>
+  new Date(`${day}T00:00:00`).toLocaleDateString("en-AU", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
 ---
 
 <!doctype html>
@@ -17,83 +26,143 @@ const hour = (h: number) => `${String(h).padStart(2, "0")}:00`;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Room bookings that admit when they clash</title>
+    <meta
+      name="description"
+      content="An ANU room booking prototype that stores double bookings instead of hiding them, and shows both sides of every clash."
+    />
   </head>
   <body>
     <nav aria-label="site">
-      <a href="/">Bookings</a>
+      <a href="/" aria-current="page">Bookings</a>
       <a href="/readme/">About</a>
     </nav>
+
     <main>
-      <h1>Room bookings that admit when they clash</h1>
-      <p>
-        Book a teaching room, and see every other booking for it at the same
-        time. The system this replaces takes the booking, says nothing, and
-        lets you find out when you walk in and someone else is already
-        teaching. This one stores the clash and shows it to both of you.
-      </p>
+      <header class="lede">
+        <h1>Room bookings that admit when they clash</h1>
+        <p>
+          Book a teaching room and see every booking that wants it at the same
+          time. The system this replaces takes your booking, says nothing, and
+          lets the conflict surface when two people walk into the same room.
+          Here a clash is <em>stored</em> and shown to both sides.
+        </p>
+      </header>
 
-      {failed && <p role="alert">That booking was missing something — every field except the purpose is required, and the finish time has to be after the start.</p>}
+      <section class="panel" aria-labelledby="book">
+        <h2 id="book">Book a room</h2>
 
-      <h2>Book a room</h2>
-      <form method="post" action="/api/bookings">
-        <p>
-          <label for="room">Room</label>
-          <select id="room" name="room" required>
-            {ROOMS.map((room) => <option value={room}>{room}</option>)}
-          </select>
-        </p>
-        <p>
-          <label for="bookedBy">Your name</label>
-          <input id="bookedBy" name="bookedBy" required maxlength="120" />
-        </p>
-        <p>
-          <label for="day">Day</label>
-          <input id="day" name="day" type="date" required value={today} />
-        </p>
-        <p>
-          <label for="startHour">From</label>
-          <select id="startHour" name="startHour" required>
-            {HOURS.map((h) => <option value={h} selected={h === 9}>{hour(h)}</option>)}
-          </select>
-        </p>
-        <p>
-          <label for="endHour">Until</label>
-          <select id="endHour" name="endHour" required>
-            {HOURS.map((h) => <option value={h + 1} selected={h === 9}>{hour(h + 1)}</option>)}
-          </select>
-        </p>
-        <p>
-          <label for="purpose">Purpose (optional)</label>
-          <input id="purpose" name="purpose" maxlength="200" />
-        </p>
-        <button>Request the room</button>
-      </form>
+        {failed && (
+          <p class="alert" role="alert">
+            That booking was missing something — everything except the purpose
+            is required, and the finish time has to be after the start.
+          </p>
+        )}
 
-      <h2>Everything booked</h2>
-      {bookings.length === 0 ? (
-        <p id="empty">Nothing is booked yet. The first booking can't clash with anything.</p>
-      ) : (
-        <ul id="bookings">
-          {bookings.map((b) => (
-            <li>
-              <strong>{b.room}</strong>{" "}
-              <time datetime={b.day}>{b.day}</time>{" "}
-              {hour(b.startHour)}–{hour(b.endHour)} — {b.bookedBy}
-              {b.purpose ? ` (${b.purpose})` : ""}
-              {clashing.has(b.id) && <span class="clash"> ⚠ clashes with another booking</span>}
-            </li>
-          ))}
-        </ul>
-      )}
+        <form method="post" action="/api/bookings">
+          <div class="field">
+            <label for="room">Room</label>
+            <select id="room" name="room" required>
+              {ROOMS.map((room) => <option value={room}>{room}</option>)}
+            </select>
+          </div>
+          <div class="field">
+            <label for="bookedBy">Your name</label>
+            <input id="bookedBy" name="bookedBy" required maxlength="120" placeholder="Who's booking it" />
+          </div>
+          <div class="field">
+            <label for="day">Day</label>
+            <input id="day" name="day" type="date" required value={today} />
+          </div>
+          <div class="field field--split">
+            <div>
+              <label for="startHour">From</label>
+              <select id="startHour" name="startHour" required>
+                {STARTS.map((h) => <option value={h} selected={h === 9}>{hourLabel(h)}</option>)}
+              </select>
+            </div>
+            <div>
+              <label for="endHour">Until</label>
+              <select id="endHour" name="endHour" required>
+                {ENDS.map((h) => <option value={h} selected={h === 10}>{hourLabel(h)}</option>)}
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="purpose">Purpose <span class="hint">(optional)</span></label>
+            <input id="purpose" name="purpose" maxlength="200" placeholder="COMP4020 crit" />
+          </div>
+          <button type="submit">Request the room</button>
+        </form>
+      </section>
+
+      <section aria-labelledby="booked">
+        <h2 id="booked">Everything booked</h2>
+
+        {days.length === 0 ? (
+          <p class="empty" id="empty">
+            Nothing is booked yet. The first booking can't clash with anything.
+          </p>
+        ) : (
+          days.map((day) => (
+            <article class="day">
+              <h3>{dayLabel(day.day)}</h3>
+
+              {day.rooms.map((track) => (
+                <div class="room">
+                  <h4>
+                    {track.room}
+                    {track.lanes.length > 1 && (
+                      <span class="tag">{track.lanes.length} bookings deep</span>
+                    )}
+                  </h4>
+
+                  <div class="scroller">
+                    <div class="track" style={`--hours:${HOUR_SLOTS}; --lanes:${track.lanes.length}`}>
+                      <div class="ruler" aria-hidden="true">
+                        {Array.from({ length: HOUR_SLOTS }, (_, i) => (
+                          <span class="tick">{hourLabel(i + FIRST_HOUR)}</span>
+                        ))}
+                      </div>
+
+                      <ul class="slots">
+                        {track.lanes.map((lane, index) =>
+                          lane.map((booking) => (
+                            <li
+                              class:list={["slot", { clash: clashing.has(booking.id) }]}
+                              style={`--start:${span(booking).start}; --end:${span(booking).end}; --lane:${index + 1}`}
+                            >
+                              <span class="who">{booking.bookedBy}</span>
+                              <span class="when">
+                                <time datetime={`${booking.day}T${String(booking.startHour).padStart(2, "0")}:00`}>
+                                  {hourLabel(booking.startHour)}
+                                </time>
+                                –{hourLabel(booking.endHour)}
+                              </span>
+                              {booking.purpose && <span class="why">{booking.purpose}</span>}
+                              {clashing.has(booking.id) && (
+                                <span class="flag">⚠ clashes</span>
+                              )}
+                            </li>
+                          )),
+                        )}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </article>
+          ))
+        )}
+      </section>
     </main>
+
     <script>
-      // Live half: other tabs find out about a new booking over the SSE
-      // stream. The form itself needs none of this — its POST + redirect
-      // re-renders the submitting tab from SQLite. A booking arriving here
-      // reloads rather than appending, because whether it *clashes* is a
-      // question about the whole list, and the server already answers it.
-      const source = new EventSource("/api/events");
-      source.addEventListener("message", () => {
+      // Other tabs find out about a new booking over the SSE stream. The form
+      // needs none of this — its POST + redirect re-renders the submitting tab
+      // from SQLite. A booking arriving here reloads rather than appending,
+      // because whether it *clashes* is a question about the whole timeline,
+      // and the server already answers it.
+      new EventSource("/api/events").addEventListener("message", () => {
         location.reload();
       });
     </script>

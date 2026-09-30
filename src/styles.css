@@ -1,76 +1,426 @@
+/* A booking system should look like a timetable, not like a form with a list
+   under it. Everything here is in service of one thing: making an overlap
+   visible as an overlap. */
+
+:root {
+  --paper: #f7f5f1;
+  --surface: #ffffff;
+  --ink: #16161a;
+  --ink-soft: #55555f;
+  --line: #ddd9d1;
+  --accent: #1c4f8f;
+  --accent-soft: #e7eefa;
+  --clash-ink: #7a2410;
+  --clash-bg: #fdeee6;
+  --clash-line: #d6764e;
+  --slot-bg: #eef1f6;
+  --slot-line: #b9c4d6;
+
+  --radius: 0.5rem;
+  --hour-width: 4.25rem;
+  --step: clamp(0.75rem, 2vw, 1.25rem);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #131317;
+    --surface: #1c1c21;
+    --ink: #f2f0ec;
+    --ink-soft: #a5a3ad;
+    --line: #34343d;
+    --accent: #8ab4f0;
+    --accent-soft: #1d2b40;
+    --clash-ink: #ffc8ad;
+    --clash-bg: #3a1d12;
+    --clash-line: #c2703f;
+    --slot-bg: #252530;
+    --slot-line: #464657;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
-  padding: 2rem;
-  font-family: system-ui, sans-serif;
+  padding: var(--step) var(--step) 4rem;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   line-height: 1.6;
-  color: #1a1a1a;
+  -webkit-text-size-adjust: 100%;
 }
 
 main {
-  max-width: 40rem;
+  max-width: 62rem;
   margin: 0 auto;
 }
 
-a {
-  color: #0b5fff;
+/* ---- navigation ---- */
+
+nav[aria-label="site"] {
+  display: flex;
+  gap: 1.25rem;
+  max-width: 62rem;
+  margin: 0 auto 2rem;
+  padding-block: 0.5rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
 }
 
-form {
+nav[aria-label="site"] a {
+  padding-block: 0.15rem;
+  color: var(--ink-soft);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+}
+
+nav[aria-label="site"] a:hover,
+nav[aria-label="site"] a:focus-visible {
+  color: var(--ink);
+}
+
+nav[aria-label="site"] a[aria-current="page"] {
+  color: var(--ink);
+  font-weight: 600;
+  border-bottom-color: var(--accent);
+}
+
+/* ---- type ---- */
+
+h1,
+h2,
+h3,
+h4 {
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+h1 {
+  margin: 0 0 0.75rem;
+  font-size: clamp(1.9rem, 5vw, 2.9rem);
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  margin: 0 0 1rem;
+  font-size: 1.3rem;
+  letter-spacing: -0.01em;
+}
+
+h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+}
+
+h4 {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  align-items: center;
-  margin-block: 1.5rem;
+  align-items: baseline;
+  margin: 0 0 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
 }
 
-input {
-  flex: 1;
-  min-width: 12rem;
-  padding: 0.4rem 0.6rem;
+a {
+  color: var(--accent);
+}
+
+.lede {
+  margin-bottom: 2.5rem;
+}
+
+.lede p {
+  max-width: 44rem;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 1.05rem;
+}
+
+.lede em {
+  color: var(--ink);
+  font-style: normal;
+  font-weight: 600;
+  box-shadow: inset 0 -0.4em 0 var(--accent-soft);
+}
+
+/* ---- the form ---- */
+
+.panel {
+  padding: 1.5rem;
+  margin-bottom: 3rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 1rem;
+  align-items: end;
+  margin: 0;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.field--split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.field--split > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.hint {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+input,
+select {
+  width: 100%;
+  min-width: 0;
+  padding: 0.55rem 0.65rem;
   font: inherit;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 0.35rem;
+}
+
+input:focus-visible,
+select:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 button {
-  padding: 0.4rem 1rem;
+  padding: 0.6rem 1.25rem;
   font: inherit;
-}
-
-#bookings {
-  padding-inline-start: 1.2rem;
-  line-height: 1.7;
-}
-
-/* The clash is the point of the app, so it has to survive a glance. Colour
-   alone would fail anyone who can't see it — and the jsdom axe pass can't
-   check contrast — so the warning carries its own words and a glyph. */
-.clash {
-  display: inline-block;
-  margin-inline-start: 0.4rem;
-  padding: 0.05rem 0.45rem;
-  border: 1px solid currentColor;
-  border-radius: 0.2rem;
-  font-size: 0.85em;
   font-weight: 600;
+  color: var(--surface);
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 0.35rem;
+  cursor: pointer;
 }
 
+@media (prefers-color-scheme: dark) {
+  button {
+    color: var(--paper);
+  }
+}
+
+button:hover {
+  filter: brightness(1.1);
+}
+
+.alert,
 [role="alert"] {
-  padding: 0.6rem 0.8rem;
-  border: 1px solid currentColor;
-  border-radius: 0.2rem;
+  grid-column: 1 / -1;
+  padding: 0.7rem 0.9rem;
+  margin: 0 0 1rem;
+  color: var(--clash-ink);
+  background: var(--clash-bg);
+  border: 1px solid var(--clash-line);
+  border-radius: 0.35rem;
 }
 
-form p {
+/* ---- the timeline ---- */
+
+.empty {
+  padding: 2.5rem 1.5rem;
+  color: var(--ink-soft);
+  text-align: center;
+  background: var(--surface);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+}
+
+.day {
+  margin-bottom: 2.5rem;
+}
+
+.day > h3 {
+  padding-bottom: 0.4rem;
+  border-bottom: 2px solid var(--ink);
+}
+
+.room {
+  margin-block: 1.5rem;
+}
+
+.tag {
+  padding: 0.05rem 0.45rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+  color: var(--clash-ink);
+  background: var(--clash-bg);
+  border: 1px solid var(--clash-line);
+  border-radius: 999px;
+}
+
+/* Thirteen hours never fit a phone. Rather than squash them into unreadable
+   slivers, the track keeps its hour width and scrolls sideways — the shape of
+   an overlap survives, which squashing would destroy. */
+.scroller {
+  overflow-x: auto;
+  padding-bottom: 0.4rem;
+}
+
+.track {
+  --hours: 13;
+  min-width: calc(var(--hours) * var(--hour-width));
+  padding: 0.6rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.ruler {
+  display: grid;
+  grid-template-columns: repeat(var(--hours), 1fr);
+  padding-bottom: 0.35rem;
+  margin-bottom: 0.45rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
+}
+
+.tick {
+  padding-left: 0.3rem;
+  border-left: 1px solid var(--line);
+}
+
+.slots {
+  display: grid;
+  grid-template-columns: repeat(var(--hours), 1fr);
+  grid-auto-rows: minmax(3.4rem, auto);
+  gap: 0.35rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  /* The hour columns stay visible behind the bookings, so a gap in the day
+     reads as a gap rather than as the end of the data. */
+  background: repeating-linear-gradient(
+    to right,
+    var(--line) 0 1px,
+    transparent 1px calc(100% / var(--hours))
+  );
+}
+
+.slot {
   display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  margin-block: 0.6rem;
+  flex-direction: column;
+  justify-content: center;
+  grid-column: var(--start) / var(--end);
+  grid-row: var(--lane);
+  padding: 0.4rem 0.55rem;
+  overflow: hidden;
+  background: var(--slot-bg);
+  border: 1px solid var(--slot-line);
+  border-left: 3px solid var(--accent);
+  border-radius: 0.35rem;
 }
 
-form label {
-  min-width: 8rem;
+/* A clash is the argument of this app, so it cannot rest on colour alone —
+   the jsdom axe pass can't see contrast, and neither can every reader. The
+   stacking does the work, the fill and the stripe reinforce it, and the slot
+   still says the word "clashes" in text. */
+.slot.clash {
+  color: var(--clash-ink);
+  background: var(--clash-bg);
+  border-color: var(--clash-line);
+  border-left-color: var(--clash-line);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 7px,
+    color-mix(in srgb, var(--clash-line) 22%, transparent) 7px 9px
+  );
 }
 
-select {
-  padding: 0.4rem 0.6rem;
-  font: inherit;
+.who {
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.when {
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+  opacity: 0.8;
+  white-space: nowrap;
+}
+
+.why {
+  font-size: 0.75rem;
+  opacity: 0.8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.flag {
+  margin-top: 0.15rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* ---- the rendered README ---- */
+
+main h1 + p,
+main h2 + p {
+  margin-top: 0;
+}
+
+main pre {
+  padding: 0.9rem 1rem;
+  overflow-x: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+main code {
+  font-size: 0.9em;
+}
+
+main blockquote {
+  padding-left: 1rem;
+  margin-inline: 0;
+  color: var(--ink-soft);
+  border-left: 3px solid var(--line);
 }
